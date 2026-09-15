@@ -22,7 +22,7 @@ export function CartBadge({ variant = "labelled", className }: CartBadgeProps) {
       href="/cart"
       aria-label={hydrated && count > 0 ? `Cart, ${count} items` : "Cart"}
       className={cn(
-        "hover:text-brand-blue relative flex flex-col items-center gap-0.5 rounded-lg px-2 py-1 text-neutral-800 transition",
+        "text-brand-blue-dark hover:text-brand-blue relative flex flex-col items-center gap-0.5 rounded-lg px-2 py-1 transition",
         className,
       )}
     >

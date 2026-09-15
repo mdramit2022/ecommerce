@@ -50,7 +50,7 @@ export function AccountMenu({ user, signOutAction, className }: AccountMenuProps
   }, [open]);
 
   const control =
-    "flex flex-col items-center gap-0.5 rounded-lg px-2 py-1 text-neutral-800 transition hover:text-brand-blue";
+    "flex flex-col items-center gap-0.5 rounded-lg px-2 py-1 text-brand-blue-dark transition hover:text-brand-blue";
 
   if (!user) {
     return (

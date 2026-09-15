@@ -8,6 +8,7 @@ Companion documents:
 
 - `docs/PROJECT_PLAN.md` - roadmap, phase status, known limitations. Update it when work lands.
 - `docs/RUNBOOK.md` - how to run the project, demo credentials, connection details, troubleshooting.
+- `docs/AUDIT.md` - the go-live audit (verified findings, blockers, priorities, page matrix). Re-generate after major changes; work the blockers list before launch.
 
 ---
 
@@ -15,7 +16,7 @@ Companion documents:
 
 **Laxmi Plastic Stores** - a Nepali kitchenware & household storefront (prices in Rs.). Full-stack e-commerce: a merchandised home page (hero carousel, category circles, best sellers, promo tiles, new arrivals, trust badges, testimonials), a searchable catalog at `/shop`, product pages with reviews, a browser-side wishlist, persistent cart (guest + server-synced), a checkout page offering several payment methods (cash on delivery, eSewa, IME Pay, bank transfer, and Stripe card payments), customer account (orders, addresses, profile), and an admin area (dashboard, products with image upload, categories, orders, customers).
 
-Brand identity, contact details and marketing copy live in `lib/brand.ts`; brand colours are Tailwind theme tokens (`brand-navy`, `brand-blue`, `brand-red`, `brand-orange`, `brand-gold`, `brand-surface`) in `app/globals.css`.
+Brand identity (name, wordmark, tagline) lives in `lib/brand.ts`; brand colours are Tailwind theme tokens (`brand-navy`, `brand-blue`, `brand-red`, `brand-orange`, `brand-gold`, `brand-surface`) in `app/globals.css`. Everything else on the home page and in the shell is **admin-managed content** stored in the database (`Banner`, `Testimonial`, `SiteContentItem`, `SiteSetting`) and edited under `/admin/banners`, `/admin/testimonials`, `/admin/content` and `/admin/settings`; `lib/brand.ts` only holds the defaults the seed writes once.
 
 ## 2. Tech Stack
 
@@ -42,17 +43,21 @@ app/                        Routes, layouts, boundaries, Route Handlers, Server 
   (auth)/                     /sign-in, /register (route group, own layout, actions.ts)
   account/                    Customer area (middleware-protected, layout re-checks auth)
   admin/                      Admin area (middleware-protected, layout re-checks role)
+                              catalog: products/, categories/, orders/, customers/
+                              home page content: banners/, testimonials/, content/, settings/
   page.tsx                    Home page (merchandised landing); shop/ is the searchable catalog
   cart/, checkout/, products/, shop/, wishlist/  Storefront routes
   <area>/actions.ts           Server Actions for that area ("use server" at top)
 components/                 Reusable UI. Server Components unless the file starts with "use client"
   ui/                         Primitives: Button, Input/Textarea/Select, Label/Field, Badge, Alert, Card/PageHeader/EmptyState, Icon (inline SVG set)
-  layout/                     Shell: AnnouncementBar, SiteHeader (+ AccountMenu, HeaderSearch, LocationPicker, MobileMenu), CategoryNav/CategoryMenu, SiteFooter, MobileTabBar, Logo
-  home/                       Home page sections (HeroCarousel, CategoryCircles, ProductStrip, PromoBanners, ...)
+  layout/                     Shell: AnnouncementBar, SiteHeader (+ AccountMenu, HeaderSearch, MobileMenu; LocationPicker exists but is hidden), CategoryNav/CategoryMenu, SiteFooter, MobileTabBar, Logo, ContentIcon
+  home/                       Home page sections (HeroCarousel, SideBanner, CategoryCircles, ProductStrip, PromoBanners, TrustBadges, TestimonialCarousel, StoreInfo)
+  admin/                      Admin forms and tables, incl. BannerForm, TestimonialForm, ContentListEditor, SettingsForm, ImageField (single-image URL + upload)
   <domain>/                   account/, admin/, auth/, cart/, checkout/, product/, reviews/, shop/, wishlist/
 lib/                        Framework-agnostic helpers, singletons, domain modules
-  brand.ts                    Store identity, contact, socials, hero/promo/testimonial copy (pure, client-safe)
+  brand.ts                    Store identity + the DEFAULT content the seed writes once (pure, client-safe)
   catalog/                    categories.ts (nav categories, cached), home.ts (home strips), merchandising.ts (pure badge rules)
+  content/                    kinds.ts (placements, themes, icon keys, setting fields - pure), serialize.ts, settings.ts (pure), site.ts (storefront readers, cached)
   prisma.ts, stripe.ts, email.ts, env.ts, rate-limit.ts, utils.ts, serializers.ts
   auth.ts                     NextAuth (Node): auth(), signIn, signOut, requireUser(), requireAdmin()
   auth.config.ts              Edge-safe NextAuth config used by middleware.ts (NO Prisma/bcrypt imports)
@@ -61,7 +66,7 @@ lib/                        Framework-agnostic helpers, singletons, domain modul
   payments/                   methods.ts (payment method catalogue), countries.ts - pure, client-safe
   <domain>/                   account/, admin/, cart/, orders/, payments/, reviews/, seo/, uploads/, users/
                               (Prisma selects, serializers, business logic per domain)
-types/                      Shared serialisable types (product.ts, order.ts, cart.ts, review.ts) + next-auth.d.ts
+types/                      Shared serialisable types (product.ts, order.ts, cart.ts, review.ts, content.ts) + next-auth.d.ts
 prisma/                     schema.prisma, migrations/, seed.ts
 tests/                      Test helpers and cross-cutting tests (tests/seo/*)
 public/uploads/             Local admin image uploads (git-ignored except .gitkeep)
@@ -144,6 +149,10 @@ Path alias: `@/*` maps to the repository root.
 | Cart / CartItem                       | Per user (`userId` unique) or anonymous `sessionId`; unique (cart, product)                                                                                                                                                                                                                                                       |
 | Order / OrderItem                     | `status` PENDING/PAID/SHIPPED/DELIVERED/CANCELLED, `paymentStatus` UNPAID/PAID/FAILED/REFUNDED, `paymentMethod` STRIPE/CASH_ON_DELIVERY/BANK_TRANSFER/ESEWA/IME_PAY, `paymentReference` (customer transaction id), `currency` (default `npr`; older rows may be `usd`), Stripe ids, shipping snapshot, item price/title snapshots |
 | Review                                | 1-5 rating + comment, unique (user, product)                                                                                                                                                                                                                                                                                      |
+| Banner                                | Home-page marketing block: `placement` HERO/PROMO_TILE/SIDEBAR, eyebrow/title/titleAccent/highlight/description, `image`, primary + secondary CTA, `theme` key, `sortOrder`, `isActive`                                                                                                                                           |
+| Testimonial                           | Customer quote: `quote`, `authorName`, `location`, `rating` 1-5, `avatar`, `sortOrder`, `isActive`                                                                                                                                                                                                                                |
+| SiteContentItem                       | Small shell content: `kind` ANNOUNCEMENT/TRUST_BADGE/SOCIAL_LINK/FOOTER_LINK, `group` (footer column), `title`, `subtitle`, `href`, `icon` key, `sortOrder`, `isActive`. Per-kind rules in `lib/validations/content.ts`                                                                                                           |
+| SiteSetting                           | Key/value store settings (`contact.*`, `store.*`, `newsletter.blurb`); keys in `lib/content/kinds.ts`, defaults in `lib/brand.ts`                                                                                                                                                                                                 |
 
 Order and payment status transitions are defined once in `lib/orders/status.ts`. The order graph is
 payment-method aware: cash on delivery may go PENDING -> SHIPPED and SHIPPED -> CANCELLED, because
@@ -152,7 +161,7 @@ order is holding inventory.
 
 ## 7. Routes Inventory (keep in sync when adding routes)
 
-Pages: `/` (home), `/shop` (catalog: `?q=&category=&sort=&featured=true&onSale=true&page=`), `/products/[slug]`, `/products` (redirects to `/shop`), `/wishlist` (client-side, localStorage), `/cart`, `/checkout`, `/checkout/success`, `/checkout/cancel`, `/sign-in`, `/register`, `/account`, `/account/orders`, `/account/orders/[id]`, `/account/addresses`, `/account/addresses/new`, `/account/addresses/[id]/edit`, `/account/profile`, `/admin`, `/admin/products`, `/admin/products/new`, `/admin/products/[id]/edit`, `/admin/categories`, `/admin/categories/[id]/edit`, `/admin/orders`, `/admin/orders/[id]`, `/admin/customers`, plus `sitemap.xml`, `robots.txt`, `manifest.webmanifest`, `not-found`, `error`.
+Pages: `/` (home), `/shop` (catalog: `?q=&category=&sort=&featured=true&onSale=true&page=`), `/products/[slug]`, `/products` (redirects to `/shop`), `/wishlist` (client-side, localStorage), `/cart`, `/checkout`, `/checkout/success`, `/checkout/cancel`, `/sign-in`, `/register`, `/account`, `/account/orders`, `/account/orders/[id]`, `/account/addresses`, `/account/addresses/new`, `/account/addresses/[id]/edit`, `/account/profile`, `/admin`, `/admin/products`, `/admin/products/new`, `/admin/products/[id]/edit`, `/admin/categories`, `/admin/categories/[id]/edit`, `/admin/orders`, `/admin/orders/[id]`, `/admin/customers`, `/admin/banners`, `/admin/banners/new`, `/admin/banners/[id]/edit`, `/admin/testimonials`, `/admin/testimonials/new`, `/admin/testimonials/[id]/edit`, `/admin/content`, `/admin/settings`, plus `sitemap.xml`, `robots.txt`, `manifest.webmanifest`, `not-found`, `error`.
 
 | Route                                         | Methods                   | Access                                                                                          |
 | --------------------------------------------- | ------------------------- | ----------------------------------------------------------------------------------------------- |

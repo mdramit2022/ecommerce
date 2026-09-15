@@ -7,13 +7,15 @@ import type { HeaderUser } from "@/components/layout/AccountMenu";
 import { CategoryMenuList } from "@/components/layout/CategoryMenuList";
 import { Logo } from "@/components/layout/Logo";
 import { MenuIcon, PhoneIcon, XIcon } from "@/components/ui/Icon";
-import { CONTACT } from "@/lib/brand";
 import type { NavCategory } from "@/lib/catalog/categories";
+import { telHref } from "@/lib/content/settings";
 
 export type MobileMenuProps = {
   categories: NavCategory[];
   user: HeaderUser | null;
   signOutAction: () => Promise<void>;
+  /** Store phone number from settings. */
+  phone: string;
 };
 
 const PRIMARY_LINKS = [
@@ -28,7 +30,7 @@ const PRIMARY_LINKS = [
  * destinations as the desktop nav and account menu. Closes on navigation and Escape; locks page
  * scroll while open.
  */
-export function MobileMenu({ categories, user, signOutAction }: MobileMenuProps) {
+export function MobileMenu({ categories, user, signOutAction, phone }: MobileMenuProps) {
   const [open, setOpen] = useState(false);
   const pathname = usePathname();
   const drawerId = useId();
@@ -62,7 +64,7 @@ export function MobileMenu({ categories, user, signOutAction }: MobileMenuProps)
         aria-label="Open menu"
         aria-expanded={open}
         aria-controls={drawerId}
-        className="-ml-2 flex h-10 w-10 items-center justify-center rounded-lg text-neutral-800 hover:bg-neutral-100"
+        className="text-brand-blue-dark -ml-2 flex h-10 w-10 items-center justify-center rounded-lg hover:bg-neutral-100"
       >
         <MenuIcon className="h-6 w-6" />
       </button>
@@ -168,12 +170,12 @@ export function MobileMenu({ categories, user, signOutAction }: MobileMenuProps)
             </div>
 
             <a
-              href={CONTACT.phoneHref}
+              href={telHref(phone)}
               className="flex items-center gap-2 border-t border-neutral-200 px-4 py-3 text-sm text-neutral-700"
             >
               <PhoneIcon className="text-brand-blue h-4 w-4" />
               <span>
-                Need help? <span className="font-semibold text-neutral-900">{CONTACT.phone}</span>
+                Need help? <span className="font-semibold text-neutral-900">{phone}</span>
               </span>
             </a>
           </div>

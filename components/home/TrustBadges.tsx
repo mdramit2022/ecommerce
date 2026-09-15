@@ -1,44 +1,32 @@
-import type { ComponentType } from "react";
-import {
-  AwardIcon,
-  BadgeCheckIcon,
-  LockIcon,
-  PackageIcon,
-  TruckIcon,
-  type IconProps,
-} from "@/components/ui/Icon";
-import { TRUST_BADGES, type TrustBadgeIcon } from "@/lib/brand";
+import { ContentIcon } from "@/components/layout/ContentIcon";
+import type { SiteContentItemData } from "@/types/content";
 
-const ICONS: Record<TrustBadgeIcon, ComponentType<IconProps>> = {
-  years: AwardIcon,
-  selection: PackageIcon,
-  quality: BadgeCheckIcon,
-  secure: LockIcon,
-  delivery: TruckIcon,
+export type TrustBadgesProps = {
+  /** Active TRUST_BADGE items in sort order. */
+  badges: SiteContentItemData[];
 };
 
-/** Server Component. Reassurance row: five reasons to buy here. */
-export function TrustBadges() {
+/** Server Component. Reassurance row: the admin-managed reasons to buy here. */
+export function TrustBadges({ badges }: TrustBadgesProps) {
+  if (badges.length === 0) return null;
+
   return (
     <section
       aria-label="Why shop with us"
       className="rounded-xl border border-neutral-200 bg-white px-4 py-4 shadow-sm sm:px-6"
     >
-      <ul className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
-        {TRUST_BADGES.map((badge) => {
-          const Icon = ICONS[badge.icon];
-          return (
-            <li key={badge.icon} className="flex items-center gap-3">
-              <span className="bg-brand-blue-light text-brand-blue flex h-10 w-10 shrink-0 items-center justify-center rounded-full">
-                <Icon className="h-5 w-5" />
-              </span>
-              <span className="flex flex-col leading-tight">
-                <span className="text-sm font-semibold text-neutral-900">{badge.title}</span>
-                <span className="text-xs text-neutral-500">{badge.subtitle}</span>
-              </span>
-            </li>
-          );
-        })}
+      <ul className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:flex lg:items-center lg:justify-between">
+        {badges.map((badge) => (
+          <li key={badge.id} className="flex items-center gap-3 lg:flex-1">
+            <span className="bg-brand-blue-light text-brand-blue flex h-10 w-10 shrink-0 items-center justify-center rounded-full">
+              <ContentIcon icon={badge.icon} className="h-5 w-5" />
+            </span>
+            <span className="flex flex-col leading-tight">
+              <span className="text-sm font-semibold text-neutral-900">{badge.title}</span>
+              {badge.subtitle && <span className="text-xs text-neutral-500">{badge.subtitle}</span>}
+            </span>
+          </li>
+        ))}
       </ul>
     </section>
   );

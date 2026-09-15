@@ -159,6 +159,29 @@ Known gaps: product and category photos are stock placeholders (Unsplash) and te
 generated avatars; replace them with real assets. The newsletter form is not connected to a mailing
 list. Footer links to About / Contact / FAQ / policy pages point at routes that do not exist yet.
 
+### Phase 7 - Admin-Managed Home Page
+
+Everything the owner would change seasonally now lives in the database and is edited in the admin
+area; the code only ships defaults that the seed writes once.
+
+| #   | Item                                                                                                | Status |
+| --- | --------------------------------------------------------------------------------------------------- | ------ |
+| 1   | Models: `Banner` (hero / promo tile / side banner), `Testimonial`, `SiteContentItem`, `SiteSetting` | Done   |
+| 2   | `/admin/banners` list + create/edit with image upload, placement-aware form, show/hide, order       | Done   |
+| 3   | `/admin/testimonials` list + create/edit with photo upload                                          | Done   |
+| 4   | `/admin/content` inline editors: announcement bar, trust badges, social links, footer link columns  | Done   |
+| 5   | `/admin/settings`: phone, email, address, hours, directions, free-delivery threshold, years, blurb  | Done   |
+| 6   | Storefront reads live content (cached per request); sections hide when nothing is active            | Done   |
+| 7   | Header: location picker hidden, search fills the row, Wishlist / Cart / Account in darker blue      | Done   |
+| 8   | Home: category panel closed by default; vertical side banner fills the left column instead          | Done   |
+| 9   | Seed writes defaults only when a table is empty, so admin edits survive re-seeding                  | Done   |
+
+### Go-live audit (2026-09-15)
+
+A 123-agent audit of the code and a production build (see `docs/AUDIT.md`) returned **not ready**:
+66 verified findings (4 high, 28 medium, 34 low), 222 live checks (179 passed), 11 blockers and a
+prioritised fix list. Work the blockers in `docs/AUDIT.md` section 2 first; re-run the audit after.
+
 ### Phase 4 - Quality & Launch
 
 | #   | Item                                           | Status |

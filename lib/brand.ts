@@ -1,9 +1,21 @@
+import type { BannerPlacement } from "@prisma/client";
+import type {
+  BannerTheme,
+  ContentIconKey,
+  SiteSettings,
+  SocialNetworkKey,
+} from "@/lib/content/kinds";
+
 /**
- * Store identity and static site copy: name, tagline, contact details, social links and the
- * marketing strings the storefront shell repeats (announcement bar, trust badges, footer).
+ * Store identity plus the DEFAULT storefront content.
  *
- * Pure data, no imports - safe for Server Components, Client Components, tests and the SEO
- * helpers. Change the values here and the whole shell follows.
+ * The identity (`BRAND`) is code: name, wordmark split, tagline, currency. Everything else on this
+ * page is a default that `prisma/seed.ts` writes into the database ONCE (only when the table for
+ * that kind is empty) and that the storefront falls back to when a setting row is missing. After
+ * seeding, admins edit the live content under /admin/banners, /admin/testimonials,
+ * /admin/content and /admin/settings - not here.
+ *
+ * Pure data, no imports beyond types - safe for Server Components, Client Components and tests.
  */
 
 export const BRAND = {
@@ -14,33 +26,23 @@ export const BRAND = {
   tagline: "Kitchenware & Household Products",
   description:
     "Your trusted partner for quality kitchenware and household products for over 26 years.",
-  yearsInBusiness: 26,
-  /** Orders at or above this amount ship free (Rs.). Display copy only; shipping is free today. */
-  freeDeliveryThreshold: 2000,
   currency: "NPR",
   locale: "en-US",
 } as const;
 
-export const CONTACT = {
+/** Fallbacks for `SiteSetting` rows (see lib/content/settings.ts). */
+export const DEFAULT_SITE_SETTINGS: SiteSettings = {
   phone: "+977-1-5912345",
-  phoneHref: "tel:+97715912345",
   email: "hello@laxmiplasticstores.com",
   addressLine: "Bafal, Kathmandu",
-  city: "Kathmandu",
   hours: "9:00 AM - 8:00 PM (Everyday)",
   directionsUrl: "https://maps.google.com/?q=Bafal,+Kathmandu",
-} as const;
+  freeDeliveryThreshold: 2000,
+  yearsInBusiness: 26,
+  newsletterBlurb: "Get updates about new products and exclusive offers.",
+};
 
-export type SocialLink = { name: "Facebook" | "Instagram" | "YouTube" | "TikTok"; href: string };
-
-export const SOCIAL_LINKS: readonly SocialLink[] = [
-  { name: "Facebook", href: "https://facebook.com" },
-  { name: "Instagram", href: "https://instagram.com" },
-  { name: "YouTube", href: "https://youtube.com" },
-  { name: "TikTok", href: "https://tiktok.com" },
-];
-
-/** Cities offered by the delivery-location picker in the header. */
+/** Cities offered by the (currently hidden) delivery-location picker in the header. */
 export const DELIVERY_CITIES = [
   "Kathmandu",
   "Lalitpur",
@@ -53,60 +55,6 @@ export const DELIVERY_CITIES = [
 export type DeliveryCity = (typeof DELIVERY_CITIES)[number];
 export const DEFAULT_DELIVERY_CITY: DeliveryCity = "Kathmandu";
 
-export type AnnouncementIcon = "truck" | "shield" | "cash";
-
-export const ANNOUNCEMENTS: readonly { icon: AnnouncementIcon; text: string }[] = [
-  { icon: "truck", text: "Free Delivery on Orders Above Rs. 2,000" },
-  { icon: "shield", text: `${BRAND.yearsInBusiness}+ Years of Trusted Service` },
-  { icon: "cash", text: "Cash on Delivery Available" },
-];
-
-export type TrustBadgeIcon = "years" | "selection" | "quality" | "secure" | "delivery";
-
-export const TRUST_BADGES: readonly { icon: TrustBadgeIcon; title: string; subtitle: string }[] = [
-  { icon: "years", title: `${BRAND.yearsInBusiness}+ Years`, subtitle: "of Experience" },
-  { icon: "selection", title: "Wide Product", subtitle: "Selection" },
-  { icon: "quality", title: "Quality", subtitle: "Products" },
-  { icon: "secure", title: "Secure", subtitle: "Shopping" },
-  { icon: "delivery", title: "Reliable", subtitle: "Delivery" },
-];
-
-export type Testimonial = {
-  quote: string;
-  name: string;
-  location: string;
-  rating: number;
-  /** Placeholder portrait. */
-  avatar: string;
-};
-
-export const TESTIMONIALS: readonly Testimonial[] = [
-  {
-    quote:
-      "Excellent quality products and very reasonable prices. I have been shopping here for years and now I'm happy to see them online!",
-    name: "Sita Sharma",
-    location: "Kathmandu",
-    rating: 5,
-    avatar: "https://i.pravatar.cc/160?img=47",
-  },
-  {
-    quote:
-      "Ordered a pressure cooker and a thali set with cash on delivery. Everything arrived the next day, well packed.",
-    name: "Ramesh Thapa",
-    location: "Lalitpur",
-    rating: 5,
-    avatar: "https://i.pravatar.cc/160?img=12",
-  },
-  {
-    quote:
-      "The stainless steel range is genuinely heavy-gauge, not the thin stuff you get elsewhere. Worth every rupee.",
-    name: "Anita Gurung",
-    location: "Pokhara",
-    rating: 4,
-    avatar: "https://i.pravatar.cc/160?img=32",
-  },
-];
-
 /** Placeholder portraits for the "happy customers" avatar stack; the figures come from real reviews. */
 export const HAPPY_CUSTOMER_AVATARS = [
   "https://i.pravatar.cc/80?img=5",
@@ -115,130 +63,184 @@ export const HAPPY_CUSTOMER_AVATARS = [
   "https://i.pravatar.cc/80?img=36",
 ] as const;
 
+// ───────────────────────────── Seed defaults ─────────────────────────────
+
 const stock = (id: string) => `https://images.unsplash.com/photo-${id}?w=1600&q=80`;
 
-export type HeroSlide = {
-  badge: string;
-  titleTop: string;
-  titleAccent: string;
-  text: string;
-  primary: { label: string; href: string };
-  secondary: { label: string; href: string };
-  image: string;
+export type ContentItemSeed = {
+  group?: string;
+  title?: string;
+  subtitle?: string;
+  href?: string;
+  icon?: ContentIconKey | SocialNetworkKey;
 };
 
-export const HERO_SLIDES: readonly HeroSlide[] = [
-  {
-    badge: "Premium Quality",
-    titleTop: "Everything Your",
-    titleAccent: "Kitchen Needs",
-    text: "Premium kitchenware, cookware & household essentials - all in one place.",
-    primary: { label: "Shop Now", href: "/shop" },
-    secondary: { label: "Explore Categories", href: "/shop" },
-    image: stock("1556909114-f6e7ad7d3136"),
-  },
-  {
-    badge: "Cookware Collection",
-    titleTop: "Cook Like",
-    titleAccent: "A Pro",
-    text: "Pressure cookers, kadhai and non-stick pans built for the Nepali kitchen.",
-    primary: { label: "Shop Cookware", href: "/shop?category=cookware" },
-    secondary: { label: "See Offers", href: "/shop?onSale=true" },
-    image: stock("1556910103-1c02745aae4d"),
-  },
-  {
-    badge: "Cash on Delivery",
-    titleTop: "Order Today,",
-    titleAccent: "Pay at Your Door",
-    text: "Free delivery on orders above Rs. 2,000 across the Kathmandu valley.",
-    primary: { label: "Start Shopping", href: "/shop" },
-    secondary: { label: "How It Works", href: "/shipping" },
-    image: stock("1600607687939-ce8a6c25118c"),
-  },
+export const DEFAULT_ANNOUNCEMENTS: readonly ContentItemSeed[] = [
+  { icon: "truck", title: "Free Delivery on Orders Above Rs. 2,000" },
+  { icon: "shield", title: "26+ Years of Trusted Service" },
+  { icon: "cash", title: "Cash on Delivery Available", href: "/checkout" },
 ];
 
-export type PromoBanner = {
-  eyebrow: string;
+export const DEFAULT_TRUST_BADGES: readonly ContentItemSeed[] = [
+  { icon: "award", title: "26+ Years", subtitle: "of Experience" },
+  { icon: "package", title: "Wide Product", subtitle: "Selection" },
+  { icon: "badge-check", title: "Quality", subtitle: "Products" },
+  { icon: "lock", title: "Secure", subtitle: "Shopping" },
+  { icon: "truck", title: "Reliable", subtitle: "Delivery" },
+];
+
+export const DEFAULT_SOCIAL_LINKS: readonly ContentItemSeed[] = [
+  { icon: "facebook", title: "Facebook", href: "https://facebook.com" },
+  { icon: "instagram", title: "Instagram", href: "https://instagram.com" },
+  { icon: "youtube", title: "YouTube", href: "https://youtube.com" },
+  { icon: "tiktok", title: "TikTok", href: "https://tiktok.com" },
+];
+
+export const DEFAULT_FOOTER_LINKS: readonly ContentItemSeed[] = [
+  { group: "Shop", title: "All Products", href: "/shop" },
+  { group: "Shop", title: "New Arrivals", href: "/shop?sort=newest" },
+  { group: "Shop", title: "Best Sellers", href: "/shop?featured=true" },
+  { group: "Shop", title: "Offers", href: "/shop?onSale=true" },
+  { group: "Categories", title: "Kitchenware", href: "/shop?category=kitchenware" },
+  { group: "Categories", title: "Cookware", href: "/shop?category=cookware" },
+  { group: "Categories", title: "Stainless Steel", href: "/shop?category=stainless-steel" },
+  { group: "Categories", title: "Glass & Ceramic", href: "/shop?category=glass-ceramic" },
+  { group: "Categories", title: "Gas & Stove", href: "/shop?category=gas-stove" },
+  { group: "Customer Service", title: "Contact Us", href: "/contact" },
+  { group: "Customer Service", title: "Shipping Information", href: "/shipping" },
+  { group: "Customer Service", title: "Returns & Refunds", href: "/returns" },
+  { group: "Customer Service", title: "FAQs", href: "/faq" },
+  { group: "Customer Service", title: "Privacy Policy", href: "/privacy" },
+  { group: "Customer Service", title: "Terms & Conditions", href: "/terms" },
+  { group: "Store", title: "About Us", href: "/about" },
+  { group: "Store", title: "Our Story", href: "/about#story" },
+  { group: "Store", title: "Store Location", href: DEFAULT_SITE_SETTINGS.directionsUrl },
+];
+
+export type BannerSeed = {
+  placement: BannerPlacement;
+  eyebrow?: string;
   title: string;
+  titleAccent?: string;
   highlight?: string;
-  cta: { label: string; href: string };
-  /** Tailwind gradient classes for the tile background. */
-  gradient: string;
-  /** Button style: white pill, outlined, or brand blue. */
-  button: "white" | "outline" | "blue";
+  description?: string;
   image: string;
-  /** Only the festival tile shows on phones, as in the reference design. */
-  mobile?: boolean;
+  ctaLabel?: string;
+  ctaHref?: string;
+  secondaryLabel?: string;
+  secondaryHref?: string;
+  theme?: BannerTheme;
 };
 
-export const PROMO_BANNERS: readonly PromoBanner[] = [
+export const DEFAULT_BANNERS: readonly BannerSeed[] = [
   {
+    placement: "HERO",
+    eyebrow: "Premium Quality",
+    title: "Everything Your",
+    titleAccent: "Kitchen Needs",
+    description: "Premium kitchenware, cookware & household essentials - all in one place.",
+    image: stock("1556909114-f6e7ad7d3136"),
+    ctaLabel: "Shop Now",
+    ctaHref: "/shop",
+    secondaryLabel: "Explore Categories",
+    secondaryHref: "/shop",
+  },
+  {
+    placement: "HERO",
+    eyebrow: "Cookware Collection",
+    title: "Cook Like",
+    titleAccent: "A Pro",
+    description: "Pressure cookers, kadhai and non-stick pans built for the Nepali kitchen.",
+    image: stock("1556910103-1c02745aae4d"),
+    ctaLabel: "Shop Cookware",
+    ctaHref: "/shop?category=cookware",
+    secondaryLabel: "See Offers",
+    secondaryHref: "/shop?onSale=true",
+  },
+  {
+    placement: "HERO",
+    eyebrow: "Cash on Delivery",
+    title: "Order Today,",
+    titleAccent: "Pay at Your Door",
+    description: "Free delivery on orders above Rs. 2,000 across the Kathmandu valley.",
+    image: stock("1600607687939-ce8a6c25118c"),
+    ctaLabel: "Start Shopping",
+    ctaHref: "/shop",
+    secondaryLabel: "How It Works",
+    secondaryHref: "/shipping",
+  },
+  {
+    placement: "PROMO_TILE",
     eyebrow: "Cookware Collection",
     title: "Upgrade Your Kitchen",
-    cta: { label: "Shop Cookware", href: "/shop?category=cookware" },
-    gradient: "from-[#8f1d18] via-[#c22a24] to-[#e35a3a]",
-    button: "white",
     image: stock("1556911220-bff31c812dba"),
+    ctaLabel: "Shop Cookware",
+    ctaHref: "/shop?category=cookware",
+    theme: "red",
   },
   {
+    placement: "PROMO_TILE",
     eyebrow: "Stainless Steel Collection",
     title: "Built for Everyday Life",
-    cta: { label: "Explore Collection", href: "/shop?category=stainless-steel" },
-    gradient: "from-[#0b5f5a] via-[#0f766e] to-[#2aa79b]",
-    button: "outline",
     image: stock("1565538810643-b5bdb714032a"),
+    ctaLabel: "Explore Collection",
+    ctaHref: "/shop?category=stainless-steel",
+    theme: "teal",
   },
   {
+    placement: "PROMO_TILE",
     eyebrow: "Festival Offers",
     title: "Dashain Kitchen Mega Sale",
     highlight: "Up to 40% OFF",
-    cta: { label: "Shop Now", href: "/shop?onSale=true" },
-    gradient: "from-[#f26a1f] via-[#e8412c] to-[#c81e1e]",
-    button: "blue",
     image: stock("1600566753086-00f18fb6b3ea"),
-    mobile: true,
+    ctaLabel: "Shop Now",
+    ctaHref: "/shop?onSale=true",
+    theme: "orange",
+  },
+  {
+    placement: "SIDEBAR",
+    eyebrow: "This Week Only",
+    title: "Pressure Cookers",
+    highlight: "From Rs. 3,250",
+    description: "Prestige, Hawkins and more - induction and gas ready.",
+    image: stock("1585515320310-259814833e62"),
+    ctaLabel: "Shop Cookware",
+    ctaHref: "/shop?category=cookware",
+    theme: "navy",
   },
 ];
 
-export type FooterLink = { label: string; href: string };
+export type TestimonialSeed = {
+  quote: string;
+  authorName: string;
+  location: string;
+  rating: number;
+  avatar: string;
+};
 
-export const FOOTER_COLUMNS: readonly { heading: string; links: readonly FooterLink[] }[] = [
+export const DEFAULT_TESTIMONIALS: readonly TestimonialSeed[] = [
   {
-    heading: "Shop",
-    links: [
-      { label: "All Products", href: "/shop" },
-      { label: "New Arrivals", href: "/shop?sort=newest" },
-      { label: "Best Sellers", href: "/shop?featured=true" },
-      { label: "Offers", href: "/shop?onSale=true" },
-    ],
+    quote:
+      "Excellent quality products and very reasonable prices. I have been shopping here for years and now I'm happy to see them online!",
+    authorName: "Sita Sharma",
+    location: "Kathmandu",
+    rating: 5,
+    avatar: "https://i.pravatar.cc/160?img=47",
   },
   {
-    heading: "Categories",
-    links: [
-      { label: "Kitchenware", href: "/shop?category=kitchenware" },
-      { label: "Cookware", href: "/shop?category=cookware" },
-      { label: "Stainless Steel", href: "/shop?category=stainless-steel" },
-      { label: "Glass & Ceramic", href: "/shop?category=glass-ceramic" },
-      { label: "Gas & Stove", href: "/shop?category=gas-stove" },
-    ],
+    quote:
+      "Ordered a pressure cooker and a thali set with cash on delivery. Everything arrived the next day, well packed.",
+    authorName: "Ramesh Thapa",
+    location: "Lalitpur",
+    rating: 5,
+    avatar: "https://i.pravatar.cc/160?img=12",
   },
   {
-    heading: "Customer Service",
-    links: [
-      { label: "Contact Us", href: "/contact" },
-      { label: "Shipping Information", href: "/shipping" },
-      { label: "Returns & Refunds", href: "/returns" },
-      { label: "FAQs", href: "/faq" },
-      { label: "Privacy Policy", href: "/privacy" },
-      { label: "Terms & Conditions", href: "/terms" },
-    ],
-  },
-  {
-    heading: "Store",
-    links: [
-      { label: "About Us", href: "/about" },
-      { label: "Our Story", href: "/about#story" },
-      { label: "Store Location", href: CONTACT.directionsUrl },
-    ],
+    quote:
+      "The stainless steel range is genuinely heavy-gauge, not the thin stuff you get elsewhere. Worth every rupee.",
+    authorName: "Anita Gurung",
+    location: "Pokhara",
+    rating: 4,
+    avatar: "https://i.pravatar.cc/160?img=32",
   },
 ];

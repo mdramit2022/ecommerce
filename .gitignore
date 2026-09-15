@@ -27,3 +27,6 @@ prisma/*.db
 # local image uploads (admin POST /api/upload)
 public/uploads/*
 !public/uploads/.gitkeep
+
+# alternate Next build dirs (NEXT_DIST_DIR)
+.next-*/

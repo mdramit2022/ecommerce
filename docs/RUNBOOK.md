@@ -34,28 +34,30 @@ older catalog (deleted when unreferenced, otherwise kept inactive).
 
 The demo customer comes with 3 reviews, 1 saved address and 4 sample orders:
 
-| Order                                           | Method           | State            | Shows                                     |
-| ----------------------------------------------- | ---------------- | ---------------- | ----------------------------------------- |
-| `ORD-DEMO-0001`                                 | Card (Stripe)    | DELIVERED / PAID | a finished card order                     |
-| `ORD-DEMO-0002`                                 | Card (Stripe)    | PENDING / UNPAID | an abandoned Stripe checkout              |
-| `ORD-DEMO-0003`                                 | Cash on delivery | SHIPPED / UNPAID | goods out, cash not yet collected         |
-| `ORD-DEMO-0004`                                 | eSewa            | PENDING / UNPAID | a transfer waiting for admin verification |
-| New customers can self-register at `/register`. |
+| Order           | Method           | State            | Shows                                     |
+| --------------- | ---------------- | ---------------- | ----------------------------------------- |
+| `ORD-DEMO-0001` | Card (Stripe)    | DELIVERED / PAID | a finished card order                     |
+| `ORD-DEMO-0002` | Card (Stripe)    | PENDING / UNPAID | an abandoned Stripe checkout              |
+| `ORD-DEMO-0003` | Cash on delivery | SHIPPED / UNPAID | goods out, cash not yet collected         |
+| `ORD-DEMO-0004` | eSewa            | PENDING / UNPAID | a transfer waiting for admin verification |
+
+New customers can self-register at `/register`.
 
 ### 2.2 Frontend (Next.js)
 
-| Item             | Value                                    |
-| ---------------- | ---------------------------------------- |
-| URL              | http://localhost:3000                    |
-| Home page        | http://localhost:3000/                   |
-| Shop (catalog)   | http://localhost:3000/shop               |
-| Wishlist         | http://localhost:3000/wishlist           |
-| Sign in          | http://localhost:3000/sign-in            |
-| Register         | http://localhost:3000/register           |
-| Cart             | http://localhost:3000/cart               |
-| Checkout         | http://localhost:3000/checkout           |
-| Customer account | http://localhost:3000/account            |
-| Admin dashboard  | http://localhost:3000/admin (ADMIN only) |
+| Item              | Value                                                                                                  |
+| ----------------- | ------------------------------------------------------------------------------------------------------ |
+| URL               | http://localhost:3000                                                                                  |
+| Home page         | http://localhost:3000/                                                                                 |
+| Shop (catalog)    | http://localhost:3000/shop                                                                             |
+| Wishlist          | http://localhost:3000/wishlist                                                                         |
+| Sign in           | http://localhost:3000/sign-in                                                                          |
+| Register          | http://localhost:3000/register                                                                         |
+| Cart              | http://localhost:3000/cart                                                                             |
+| Checkout          | http://localhost:3000/checkout                                                                         |
+| Customer account  | http://localhost:3000/account                                                                          |
+| Admin dashboard   | http://localhost:3000/admin (ADMIN only)                                                               |
+| Home page content | http://localhost:3000/admin/banners, /admin/testimonials, /admin/content, /admin/settings (ADMIN only) |
 
 ### 2.3 Backend (Route Handlers, same server)
 
@@ -241,3 +243,24 @@ flows here, not live gateway integrations.
      payment is recorded; cancelling any reserved order puts its stock back.
 6. Back in the customer account, `/account/orders/<id>` shows the method, the reference and the
    payment progress in the timeline.
+
+---
+
+## 11. Managing the Home Page
+
+Everything on the home page apart from the products themselves is edited in the admin area
+(sign in as the admin account, then use the **Home page** group in the left navigation):
+
+| Screen                | What it controls                                                                                                                                                                          |
+| --------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `/admin/banners`      | Hero slides, the three promo tiles, and the vertical side banner beside the hero. Upload an image or paste a URL, pick a colour theme, set the button text and link, order and show/hide. |
+| `/admin/testimonials` | Customer quotes with star rating and optional photo.                                                                                                                                      |
+| `/admin/content`      | Announcement bar lines, trust badges, social links, footer link columns. Edit a row and press Save; add rows at the bottom of each list.                                                  |
+| `/admin/settings`     | Phone, support email, store address, opening hours, directions link, free-delivery threshold, years in business (the gold medallion), newsletter text.                                    |
+
+A section disappears from the home page when nothing in it is active, so hide rather than delete
+when you want something back later. The seed only writes these defaults when a table is empty:
+re-running `npx prisma db seed` never overwrites what was changed in the admin.
+
+Best Sellers come from products marked **Featured** (ranked by review count); New Arrivals are the
+newest active products; the customer-rating card shows the real review average.

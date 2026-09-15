@@ -3,6 +3,7 @@ import { Inter } from "next/font/google";
 import { auth } from "@/lib/auth";
 import { BRAND } from "@/lib/brand";
 import { listNavCategoriesSafe } from "@/lib/catalog/categories";
+import { getSiteContentSafe } from "@/lib/content/site";
 import { SITE_DESCRIPTION } from "@/lib/seo/site";
 import { AnnouncementBar } from "@/components/layout/AnnouncementBar";
 import { CategoryNav } from "@/components/layout/CategoryNav";
@@ -21,10 +22,15 @@ export const metadata: Metadata = {
 
 /**
  * Root layout: announcement bar, header, desktop category nav, page, footer and the phone tab
- * bar. Reads the session once and the category list once (cached per request) for the shell.
+ * bar. Reads the session, the category list and the admin-managed site content once each
+ * (all cached per request) for the shell.
  */
 export default async function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
-  const [session, categories] = await Promise.all([auth(), listNavCategoriesSafe()]);
+  const [session, categories, site] = await Promise.all([
+    auth(),
+    listNavCategoriesSafe(),
+    getSiteContentSafe(),
+  ]);
   const user = session?.user
     ? {
         name: session.user.name ?? null,
@@ -36,13 +42,17 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
   return (
     <html lang="en" className={inter.variable}>
       <body className="bg-brand-surface min-h-screen font-sans text-neutral-900 antialiased">
-        <AnnouncementBar />
-        <SiteHeader categories={categories} user={user} />
+        <AnnouncementBar announcements={site.announcements} socialLinks={site.socialLinks} />
+        <SiteHeader categories={categories} user={user} phone={site.settings.phone} />
         <CategoryNav categories={categories} />
         <CartSync userId={session?.user?.id ?? null} />
         {/* Bottom padding keeps content clear of the fixed phone tab bar. */}
         <div className="pb-16 md:pb-0">{children}</div>
-        <SiteFooter />
+        <SiteFooter
+          columns={site.footerColumns}
+          socialLinks={site.socialLinks}
+          settings={site.settings}
+        />
         <MobileTabBar />
       </body>
     </html>

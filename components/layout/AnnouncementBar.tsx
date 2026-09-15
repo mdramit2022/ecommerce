@@ -1,79 +1,68 @@
-import type { ComponentType } from "react";
-import { ANNOUNCEMENTS, SOCIAL_LINKS, type AnnouncementIcon } from "@/lib/brand";
-import {
-  BanknoteIcon,
-  ChevronDownIcon,
-  FacebookIcon,
-  InstagramIcon,
-  NepalFlagIcon,
-  ShieldCheckIcon,
-  TiktokIcon,
-  TruckIcon,
-  YoutubeIcon,
-  type IconProps,
-} from "@/components/ui/Icon";
+import Link from "next/link";
+import { ContentIcon } from "@/components/layout/ContentIcon";
+import { SOCIAL_NETWORK_LABELS, isSocialNetworkKey } from "@/lib/content/kinds";
+import type { SiteContentItemData } from "@/types/content";
 
-const ANNOUNCEMENT_ICONS: Record<AnnouncementIcon, ComponentType<IconProps>> = {
-  truck: TruckIcon,
-  shield: ShieldCheckIcon,
-  cash: BanknoteIcon,
+export type AnnouncementBarProps = {
+  announcements: SiteContentItemData[];
+  socialLinks: SiteContentItemData[];
 };
 
-const SOCIAL_ICONS = {
-  Facebook: FacebookIcon,
-  Instagram: InstagramIcon,
-  YouTube: YoutubeIcon,
-  TikTok: TiktokIcon,
-} satisfies Record<(typeof SOCIAL_LINKS)[number]["name"], ComponentType<IconProps>>;
-
 /**
- * Server Component. Navy strip above the header: delivery promises on the left, social links and
- * the region flag on the right. Desktop only - the mobile header keeps its chrome to one row.
+ * Server Component. Navy strip above the header: the admin-managed announcements on the left,
+ * social links on the right. Desktop only - the phone header keeps its chrome to one row.
+ * Renders nothing when both lists are empty.
  */
-export function AnnouncementBar() {
+export function AnnouncementBar({ announcements, socialLinks }: AnnouncementBarProps) {
+  if (announcements.length === 0 && socialLinks.length === 0) return null;
+
   return (
     <div className="bg-brand-navy hidden text-white md:block">
       <div className="mx-auto flex h-8 w-full max-w-7xl items-center justify-between px-4 text-[11px] font-medium sm:px-6 lg:px-8">
         <ul className="flex items-center divide-x divide-white/25">
-          {ANNOUNCEMENTS.map((item) => {
-            const Icon = ANNOUNCEMENT_ICONS[item.icon];
+          {announcements.map((item) => {
+            const body = (
+              <>
+                <ContentIcon icon={item.icon} className="h-3.5 w-3.5 text-white/80" />
+                <span>{item.title}</span>
+              </>
+            );
             return (
-              <li key={item.text} className="flex items-center gap-1.5 px-4 first:pl-0">
-                <Icon className="h-3.5 w-3.5 text-white/80" />
-                <span>{item.text}</span>
+              <li key={item.id} className="flex items-center gap-1.5 px-4 first:pl-0">
+                {item.href ? (
+                  <Link href={item.href} className="flex items-center gap-1.5 hover:text-white/80">
+                    {body}
+                  </Link>
+                ) : (
+                  body
+                )}
               </li>
             );
           })}
         </ul>
 
-        <div className="flex items-center divide-x divide-white/25">
-          <div className="flex items-center gap-2.5 pr-4">
+        {socialLinks.length > 0 && (
+          <div className="flex items-center gap-2.5">
             <span className="text-white/80">Follow Us:</span>
-            {SOCIAL_LINKS.map((social) => {
-              const Icon = SOCIAL_ICONS[social.name];
-              return (
-                <a
-                  key={social.name}
-                  href={social.href}
-                  target="_blank"
-                  rel="noreferrer"
-                  aria-label={social.name}
-                  className="text-white/85 transition hover:text-white"
-                >
-                  <Icon className="h-3.5 w-3.5" />
-                </a>
-              );
-            })}
+            {socialLinks.map((social) => (
+              <a
+                key={social.id}
+                href={social.href ?? "#"}
+                target="_blank"
+                rel="noreferrer"
+                aria-label={
+                  social.title ||
+                  (isSocialNetworkKey(social.icon)
+                    ? SOCIAL_NETWORK_LABELS[social.icon]
+                    : "Social link")
+                }
+                className="text-white/85 transition hover:text-white"
+              >
+                <ContentIcon icon={social.icon} className="h-3.5 w-3.5" />
+              </a>
+            ))}
           </div>
-          <button
-            type="button"
-            className="flex items-center gap-1.5 pl-4 text-white/85 hover:text-white"
-            aria-label="Region: Nepal"
-          >
-            <NepalFlagIcon className="h-4 w-3.5" />
-            <ChevronDownIcon className="h-3 w-3" />
-          </button>
-        </div>
+        )}
       </div>
     </div>
   );

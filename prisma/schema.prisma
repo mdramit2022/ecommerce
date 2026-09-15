@@ -279,3 +279,86 @@ model Review {
   @@unique([userId, productId])
   @@index([productId])
 }
+
+// ─────────────────────────────── Storefront content (admin-managed) ────────────
+
+/// Where a banner renders on the home page. See lib/content/kinds.ts for what each uses.
+enum BannerPlacement {
+  HERO
+  PROMO_TILE
+  SIDEBAR
+}
+
+/// Small repeated content items edited from /admin/content.
+enum SiteContentKind {
+  ANNOUNCEMENT
+  TRUST_BADGE
+  SOCIAL_LINK
+  FOOTER_LINK
+}
+
+model Banner {
+  id             String          @id @default(cuid())
+  placement      BannerPlacement
+  eyebrow        String?
+  title          String
+  titleAccent    String?
+  highlight      String?
+  description    String?
+  image          String
+  ctaLabel       String?
+  ctaHref        String?
+  secondaryLabel String?
+  secondaryHref  String?
+  /// Colour theme key (lib/content/kinds.ts); null = placement default.
+  theme          String?
+  sortOrder      Int             @default(0)
+  isActive       Boolean         @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([placement, isActive, sortOrder])
+}
+
+model Testimonial {
+  id         String  @id @default(cuid())
+  quote      String  @db.Text
+  authorName String
+  location   String?
+  rating     Int // 1..5 (validated in application layer)
+  avatar     String?
+  sortOrder  Int     @default(0)
+  isActive   Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([isActive, sortOrder])
+}
+
+model SiteContentItem {
+  id        String          @id @default(cuid())
+  kind      SiteContentKind
+  /// Footer column heading; unused by other kinds.
+  group     String?
+  title     String?
+  subtitle  String?
+  href      String?
+  /// Icon key (announcements, trust badges) or network key (social links).
+  icon      String?
+  sortOrder Int             @default(0)
+  isActive  Boolean         @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([kind, isActive, sortOrder])
+}
+
+/// Key/value store settings (contact details, store numbers). Keys: lib/content/kinds.ts.
+model SiteSetting {
+  key       String   @id
+  value     String   @db.Text
+  updatedAt DateTime @updatedAt
+}

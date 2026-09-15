@@ -220,7 +220,7 @@ export function ProductForm({ action, categories, product, submitLabel }: Produc
           </Field>
 
           <div className="grid gap-5 sm:grid-cols-3">
-            <Field id={fieldId("price")} label="Price (USD)" required error={errors.price}>
+            <Field id={fieldId("price")} label="Price (Rs.)" required error={errors.price}>
               <Input
                 id={fieldId("price")}
                 name="price"

@@ -1,5 +1,6 @@
 import { PrismaClient, Prisma } from "@prisma/client";
 import { hash } from "bcryptjs";
+import { seedStorefrontContent } from "./seed-content";
 
 const prisma = new PrismaClient();
 
@@ -887,6 +888,20 @@ async function main(): Promise<void> {
       items: { create: [line(frypan, 1)] },
     },
   });
+
+  // ── Storefront content (banners, testimonials, announcements, settings) ──
+  // Written only when empty; afterwards the admin owns it (see prisma/seed-content.ts).
+  const contentResult = await seedStorefrontContent(prisma);
+  if (
+    contentResult.items ||
+    contentResult.banners ||
+    contentResult.testimonials ||
+    contentResult.settings
+  ) {
+    console.log(
+      `Storefront content: ${contentResult.banners} banners, ${contentResult.testimonials} testimonials, ${contentResult.items} content items, ${contentResult.settings} settings written.`,
+    );
+  }
 
   console.log(
     `Seeded ${categories.length} categories, ${products.length} products, ${reviewCount} reviews, ${REVIEWERS.length} reviewers, 1 address, 4 orders.`,
