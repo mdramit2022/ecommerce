@@ -1,0 +1,113 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  # Placeholder values so `lib/env.ts` validation passes at build time.
+  # Nothing here is a real secret; the build never contacts the database or Stripe.
+  DATABASE_URL: postgresql://ci:ci@localhost:5432/ci
+  AUTH_SECRET: ci-only-auth-secret-not-for-production-0123456789abcdef
+  AUTH_TRUST_HOST: "true"
+  STRIPE_SECRET_KEY: sk_test_ci_placeholder_0000000000
+  NEXT_PUBLIC_APP_URL: http://localhost:3000
+  NEXT_TELEMETRY_DISABLED: "1"
+  CI: "true"
+
+jobs:
+  check:
+    name: Typecheck, lint, test, build
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Check out
+        uses: actions/checkout@v4
+
+      - name: Set up Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate Prisma client
+        run: npx prisma generate
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Unit tests
+        # This job has no database: blank DATABASE_URL so the guarded integration suites
+        # (lib/orders/fulfill.test.ts, lib/orders/place.test.ts) skip instead of failing to connect.
+        env:
+          DATABASE_URL: ""
+        run: npm run test
+
+      - name: Build
+        run: npm run build
+
+  migrate-check:
+    name: Migrations apply and seed
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: ci
+          POSTGRES_PASSWORD: ci
+          POSTGRES_DB: ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U ci -d ci"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      - name: Check out
+        uses: actions/checkout@v4
+
+      - name: Set up Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Apply migrations
+        run: npx prisma migrate deploy
+
+      - name: Verify schema.prisma matches the applied migrations (no drift)
+        run: >-
+          npx prisma migrate diff
+          --from-url "$DATABASE_URL"
+          --to-schema-datamodel prisma/schema.prisma
+          --exit-code
+
+      - name: Seed
+        run: npx prisma db seed
+
+      - name: Seed is idempotent
+        run: npx prisma db seed
+
+      - name: Integration tests (live database)
+        # Guarded suites run only when DATABASE_URL points at a reachable Postgres.
+        run: npx vitest run lib/orders/fulfill.test.ts lib/orders/place.test.ts

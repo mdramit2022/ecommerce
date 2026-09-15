@@ -1,0 +1,17 @@
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: ecommerce-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: ecommerce
+    ports:
+      # Host port 5436 - 5432..5435 are used by other local projects on this machine.
+      - "5436:5432"
+    volumes:
+      - ecommerce_pgdata:/var/lib/postgresql/data
+
+volumes:
+  ecommerce_pgdata:

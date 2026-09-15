@@ -1,0 +1,28 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
+
+  /* Laxmi Plastic Stores palette - navy chrome, blue actions, red/orange accents, gold badge. */
+  --color-brand-navy: #0b2a5b;
+  --color-brand-navy-dark: #081f44;
+  --color-brand-blue: #1a5fd1;
+  --color-brand-blue-dark: #154cab;
+  --color-brand-blue-light: #e8f0fd;
+  --color-brand-red: #e12d2b;
+  --color-brand-red-dark: #c02220;
+  --color-brand-orange: #f26a1f;
+  --color-brand-orange-dark: #d95a12;
+  --color-brand-gold: #f4b400;
+  --color-brand-gold-dark: #d99a00;
+  --color-brand-surface: #f4f6fa;
+}
+
+/* Horizontal scrollers (category strips, tab rows) hide their scrollbar but stay scrollable. */
+@utility no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
